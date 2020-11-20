@@ -161,6 +161,13 @@ async def 물건설명(ctx, n: int):
         n = len(f)
     elif n < 1:
         n = 1
+    if not f:
+        f = [{
+            "index": str(len(f) + 1),
+            "name": "등록된 물건 없음",
+            "price": "2147483647",
+            "description": "Wild MISSINGNO. appeared!",
+        }]
     k = f[n - 1]
     em = discord.Embed(title=f"{n}번 물건의 설명", description="", color=0x00FF00)
     em.add_field(name=k["name"], value=k["description"], inline=True)
