@@ -14,7 +14,7 @@ bot.remove_command('help')
 
 # configuration
 version = "v.0.1.4"
-token = "NzMzMjUzMDY4OTQ2Mjc2Mzkz.XxAdIg.ReKI01-xImzzhxHFTHO4lacBubU"
+token = "token"
 
 
 @bot.event
