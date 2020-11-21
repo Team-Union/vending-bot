@@ -1,4 +1,3 @@
-import traceback
 import json
 
 import discord
