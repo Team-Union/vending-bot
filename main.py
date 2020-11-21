@@ -24,7 +24,7 @@ except:
 # changelog
 changelog = """
 Added \"상품수정\" command,
-Alpha sign-off
+Alpha sign-off (v1.0.0)
 """
 
 
