@@ -53,8 +53,8 @@ async def hellothisisverification(ctx):
 
 
 @bot.command()
-async def 상품보기(ctx, pid: int = None):
-    if pid is not None:
+async def 상품보기(ctx, pid: int = 1):
+    if True:
         sjt = []
         try:
             sjt = jpgtb[str(ctx.guild.id)]
@@ -90,41 +90,6 @@ async def 상품보기(ctx, pid: int = None):
         em.add_field(name="물건 가격", value=eps, inline=True)
         em.set_footer(text=f"Vending Bot {version}")
         await ctx.send(embed=em)
-    else:
-        sjt = []
-        try:
-            sjt = jpgtb[str(ctx.guild.id)]
-        except KeyError:
-            sjt = [[{
-                "index": "1",
-                "name": "등록된 상품 없음",
-                "price": "등록된 가격 없음",
-                "description": "등록된 설명 없음",
-            }]]
-        sjtl = len(sjt)
-        pid = 1
-        if pid > sjtl:
-            pid = sjtl
-        lsd = sjt[pid - 1]
-        em = discord.Embed(
-            title=f"전체 품목 중 1 페이지 (1 - {15 * (pid - 1) + len(lsd)})",
-            description="성공 - 상품 목록 보기",
-            color=0x00FF00,
-        )
-        efo = []
-        [efo.append(x["index"]) for x in lsd]
-        eos = "\n".join(efo)
-        efn = []
-        [efn.append(x["name"]) for x in lsd]
-        ens = "\n".join(efn)
-        efp = []
-        [efp.append(x["price"]) for x in lsd]
-        eps = "\n".join(efp)
-        em.add_field(name="물건 번호", value=eos, inline=True)
-        em.add_field(name="물건 이름", value=ens, inline=True)
-        em.add_field(name="물건 가격", value=eps, inline=True)
-        em.set_footer(text=f"Vending Bot {version}")
-        await ctx.send(embed=em)
 
 
 @bot.command(aliases=("help",))
@@ -155,7 +120,7 @@ async def 도움(ctx):
 
 
 @bot.command()
-async def 상품설명(ctx, n: int = None):
+async def 상품설명(ctx, n: int = 1):
     try:
         sjt = jpgtb[str(ctx.guild.id)]
         f = []
