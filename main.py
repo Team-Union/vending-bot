@@ -12,7 +12,7 @@ bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "v1.0.0"
+version = "v1.0.1"
 try:
     from os import getenv
     token = getenv('Token')
@@ -25,6 +25,8 @@ except:
 changelog = """
 Added \"상품수정\" command,
 Alpha sign-off (v1.0.0)
+
+Hotfix (v1.0.1)
 """
 
 
@@ -223,20 +225,22 @@ async def 상품수정(ctx, v: int = 1, property: str = None, value: str = None)
     if property is None or value is None:
         em = discord.Embed(title="오류", description="입력한 값 중 하나가 없거나 올바르지 않습니다!", color=0xFF0000)
         em.set_footer(text=f"Vending Bot {version}")
-        await ctx.send(embed=em)
-        return
-    if property == "이름":
-        property = "name"
-    elif property == "가격":
-        property = "price"
-    elif property == "설명":
-        property = "description"
-    else:
+        return await ctx.send(embed=em)
+    
+    properties = {
+        "이름" : "name",
+        "가격" : "price",
+        "설명" : "description"
+    }
+    
+    if property not in properties:
         em = discord.Embed(title="오류", description="수정할 속성이 올바르지 않습니다!", color=0xFF0000)
         em.add_field(name="가능한 속성", value="이름\n가격\n설명")
         em.set_footer(text=f"Vending Bot {version}")
-        await ctx.send(embed=em)
-        return
+        return await ctx.send(embed=em)
+    
+    property = properties[property]
+        
     jpgtb[str(ctx.guild.id)][int(v / 15)][property] = value
     name, price = jpgtb[str(ctx.guild.id)][int(v / 15)]["name"], jpgtb[str(ctx.guild.id)][int(v / 15)]["price"]
     em = discord.Embed(title=f"{name}(이)가 수정됨", description="", color=0x00FF00)
