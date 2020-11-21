@@ -13,7 +13,7 @@ bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "v0.1.5-unstable"
+version = "v0.1.6-unstable"
 token = "token"
 
 
@@ -235,4 +235,7 @@ async def on_command_error(ctx, err):
     raise err
 
 
+with open("token") as f:
+    global token
+    token = f.read()
 bot.run(token)
