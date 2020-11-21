@@ -13,7 +13,19 @@ bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "v0.2.0"
+version = "v0.2.1"
+try:
+    from os import getenv
+    token = getenv('Token')
+    if not token:
+        raise RuntimeError('토큰 없음')
+except:
+    token = "token"
+
+# changelog
+changelog = """
+Hotfix
+"""
 
 
 @bot.event
@@ -46,6 +58,9 @@ async def after(ctx):
     with open("db.json", "w", encoding="utf-8") as f:
         json.dump(jpgtb, f, indent=4)
 
+@bot.command()
+async def 패치(ctx):
+    await ctx.send(changelog)
 
 @bot.command()
 async def hellothisisverification(ctx):
@@ -204,7 +219,7 @@ async def 상품삭제(ctx, v: int):
 @bot.event
 async def on_command_error(ctx, err):
     if isinstance(err, commands.errors.MissingPermissions):
-        em = discord.Embed(title="오류", description="당신은 이 커맨드를 사용할 권한이 없습니다!", color=0xFF0000)
+        em = discord.Embed(title="오류 : ", description="당신은 이 커맨드를 사용할 권한이 없습니다!", color=0xFF0000)
         em.set_footer(text=f"Vending Bot {version}")
         return await ctx.send(embed=em)
 
@@ -213,6 +228,4 @@ async def on_command_error(ctx, err):
 
     raise err
 
-
-with open("token") as f:
-    bot.run(f.read())
+bot.run(token)
