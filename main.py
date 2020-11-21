@@ -13,7 +13,7 @@ bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "v0.1.7-unstable"
+version = "v0.2.0"
 
 
 @bot.event
@@ -40,6 +40,7 @@ async def on_command(ctx):
             "description": "등록된 설명 없음",
         }]]
 
+
 @bot.after_invoke
 async def after(ctx):
     with open("db.json", "w", encoding="utf-8") as f:
@@ -59,11 +60,11 @@ async def 상품보기(ctx, pid: int = None):
             sjt = jpgtb[str(ctx.guild.id)]
         except KeyError:
             sjt = [[{
-            "index": "1",
-            "name": "등록된 상품 없음",
-            "price": "등록된 가격 없음",
-            "description": "등록된 설명 없음",
-        }]]
+                "index": "1",
+                "name": "등록된 상품 없음",
+                "price": "등록된 가격 없음",
+                "description": "등록된 설명 없음",
+            }]]
         sjtl = len(sjt)
         if pid > sjtl:
             pid = sjtl
@@ -95,11 +96,11 @@ async def 상품보기(ctx, pid: int = None):
             sjt = jpgtb[str(ctx.guild.id)]
         except KeyError:
             sjt = [[{
-            "index": "1",
-            "name": "등록된 상품 없음",
-            "price": "등록된 가격 없음",
-            "description": "등록된 설명 없음",
-        }]]
+                "index": "1",
+                "name": "등록된 상품 없음",
+                "price": "등록된 가격 없음",
+                "description": "등록된 설명 없음",
+            }]]
         sjtl = len(sjt)
         pid = 1
         if pid > sjtl:
@@ -154,28 +155,40 @@ async def 도움(ctx):
 
 
 @bot.command()
-async def 상품설명(ctx, n: int):
-    sjt = jpgtb[str(ctx.guild.id)]
-    f = []
-    for i in sjt:
-        for j in i:
-            f.append(j)
-    if len(f) < n:
-        n = len(f)
-    elif n < 1:
-        n = 1
-    if not f:
-        f = [{
-            "index": str(len(f) + 1),
-            "name": "등록된 상품 없음",
-            "price": "등록된 가격 없음",
-            "description": "등록된 설명 없음",
-        }]
-    k = f[n - 1]
-    em = discord.Embed(title=f"{n}번 상품의 설명", description="", color=0x00FF00)
-    em.add_field(name=k["name"], value=k["description"], inline=True)
-    em.set_footer(text=f"Vending Bot {version}")
-    await ctx.send(embed=em)
+async def 상품설명(ctx, n: int = None):
+    try:
+        sjt = jpgtb[str(ctx.guild.id)]
+        f = []
+        for i in sjt:
+            for j in i:
+                f.append(j)
+        if len(f) < n:
+            n = len(f)
+        elif n < 1:
+            n = 1
+        if not f:
+            f = [{
+                "index": str(len(f) + 1),
+                "name": "등록된 상품 없음",
+                "price": "등록된 가격 없음",
+                "description": "등록된 설명 없음",
+            }]
+        k = f[n - 1]
+        em = discord.Embed(title=f"{n}번 상품의 설명", description="", color=0x00FF00)
+        em.add_field(name=k["name"], value=k["description"], inline=True)
+        em.set_footer(text=f"Vending Bot {version}")
+        await ctx.send(embed=em)
+    except KeyError:
+        k = {
+                "index": "1",
+                "name": "등록된 상품 없음",
+                "price": "등록된 가격 없음",
+                "description": "등록된 설명 없음",
+            }
+        em = discord.Embed(title=f"{1}번 상품의 설명", description="", color=0x00FF00)
+        em.add_field(name=k["name"], value=k["description"], inline=True)
+        em.set_footer(text=f"Vending Bot {version}")
+        await ctx.send(embed=em)
 
 
 @bot.command()
@@ -200,6 +213,7 @@ async def 상품등록(ctx, name, price, *, description):
         sjt.append([])
         var = sjt[int(len(f) / 15)]
     var.append(goza)
+    jpgtb[str(ctx.guild.id)][int(len(f) / 15)] += goza
     em = discord.Embed(title=f"{name}(이)가 생성됨", description="", color=0x00FF00)
     em.add_field(name="물건 번호", value=str(len(f) + 1), inline=True)
     em.add_field(name="물건 이름", value=name, inline=True)
@@ -216,6 +230,7 @@ async def 상품삭제(ctx, v: int):
     print(str((v - int(v / 15) * 15)))
     print(str(var))
     del var[(v - (int(v / 15) * 15)) - 1]
+    del jpgtb[str(ctx.guild.id)][int(v / 15)]
     em = discord.Embed(title=f"{v}번 물건이 삭제됨", description="삭제가 완료되었습니다.", color=0xFF00)
     em.set_footer(text=f"Vending Bot {version}")
     await ctx.send(embed=em)
