@@ -12,7 +12,7 @@ bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "v0.2.1"
+version = "v1.0.0"
 try:
     from os import getenv
     token = getenv('Token')
@@ -23,7 +23,8 @@ except:
 
 # changelog
 changelog = """
-Hotfix
+Added \"상품수정\" command,
+Alpha sign-off
 """
 
 
@@ -118,12 +119,14 @@ async def 도움(ctx):
     !자판기 상품설명 번호
     !자판기 상품등록 이름 가격 설명
     !자판기 상품삭제 번호
+    !자판기 상품수정 번호 수정할속성 값
     """
     ens = """
     (페이지)번째 페이지의 상품 목록을 봅니다.
     번호에 해당하는 상품의 설명을 봅니다.
     이름, 가격, 설명을 가진 상품을 등록합니다.
     번호에 해당하는 상품을 삭제합니다.
+    번호에 해당하는 상품을 수정합니다.
     """
     em.add_field(name="명령어", value=eos, inline=True)
     em.add_field(name="설명", value=ens, inline=True)
@@ -211,6 +214,35 @@ async def 상품삭제(ctx, v: int):
     del var[(v - (int(v / 15) * 15)) - 1]
     del jpgtb[str(ctx.guild.id)][int(v / 15)]
     em = discord.Embed(title=f"{v}번 물건이 삭제됨", description="삭제가 완료되었습니다.", color=0xFF00)
+    em.set_footer(text=f"Vending Bot {version}")
+    await ctx.send(embed=em)
+
+
+@bot.command()
+async def 상품수정(ctx, v: int = 1, property: str = None, value: str = None):
+    if property is None or value is None:
+        em = discord.Embed(title="오류", description="입력한 값 중 하나가 없거나 올바르지 않습니다!", color=0xFF0000)
+        em.set_footer(text=f"Vending Bot {version}")
+        await ctx.send(embed=em)
+        return
+    if property == "이름":
+        property = "name"
+    elif property == "가격":
+        property = "price"
+    elif property == "설명":
+        property = "description"
+    else:
+        em = discord.Embed(title="오류", description="수정할 속성이 올바르지 않습니다!", color=0xFF0000)
+        em.add_field(name="가능한 속성", value="이름\n가격\n설명")
+        em.set_footer(text=f"Vending Bot {version}")
+        await ctx.send(embed=em)
+        return
+    jpgtb[str(ctx.guild.id)][int(v / 15)][property] = value
+    name, price = jpgtb[str(ctx.guild.id)][int(v / 15)]["name"], jpgtb[str(ctx.guild.id)][int(v / 15)]["price"]
+    em = discord.Embed(title=f"{name}(이)가 수정됨", description="", color=0x00FF00)
+    em.add_field(name="물건 번호", value=str(v), inline=True)
+    em.add_field(name="물건 이름", value=name, inline=True)
+    em.add_field(name="물건 가격", value=price, inline=True)
     em.set_footer(text=f"Vending Bot {version}")
     await ctx.send(embed=em)
 
