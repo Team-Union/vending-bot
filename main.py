@@ -129,6 +129,7 @@ async def 공지설정(ctx, id: str = None):
             description="공지 채널이 설정되었습니다.",
             color=0x00FF00,
         )
+        await ctx.send(embed=em)
 
 
 @bot.command()
