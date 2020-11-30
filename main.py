@@ -8,13 +8,17 @@ from discord.ext.commands import errors
 with open("db.json", "r", encoding="utf-8") as f:
     jpgtb = json.load(f)
 
+with open("servers.json", "r", encoding="utf-8") as f:
+    sc = json.load(f)
+
 bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "v1.0.1"
+version = "v1.1.0"
 try:
     from os import getenv
+
     token = getenv('Token')
     if not token:
         raise RuntimeError('토큰 없음')
@@ -23,10 +27,14 @@ except:
 
 # changelog
 changelog = """
-Added \"상품수정\" command,
+Added: \"상품수정\",
 Alpha sign-off (v1.0.0)
 
 Hotfix (v1.0.1)
+
+Fixed: \"상품수정\" (v1.0.2)
+
+Added: \"공지\", \"공지설정\" (v1.1.0)
 """
 
 
@@ -59,10 +67,69 @@ async def on_command(ctx):
 async def after(ctx):
     with open("db.json", "w", encoding="utf-8") as f:
         json.dump(jpgtb, f, indent=4)
+    with open("servers.json", "w", encoding="utf-8") as f:
+        json.dump(sc, f, indent=4)
+
 
 @bot.command()
-async def 패치(ctx):
-    await ctx.send(changelog)
+async def 패치(ctx, ver: str = version):
+    goza = changelog.split("\n\n")
+    shanghaijo = "해당 버전의 내용 없음"
+    for i in goza:
+        if i.endswith(f"(v{ver})"):
+            shanghaijo = i
+    em = discord.Embed(
+        title=f"자판기봇 업데이트 내역",
+        description="",
+        color=0x00FF00,
+    )
+    em.add_field(name=ver, value=shanghaijo)
+    await ctx.send(embed=em)
+
+
+@bot.command()
+async def 공지(ctx, title, desc):
+    em = discord.Embed(
+        title=title,
+        description=desc,
+        color=0x00FF00,
+    )
+    for i in bot.guilds:
+        try:
+            await i.get_channel(int(sc[str(i.id)]["notice-channel"])).send(embed=em)
+        except KeyError:
+            try:
+                sc[str(i.id)]["notice-channel"] = "0"
+            except KeyError:
+                sc[str(i.id)] = {
+                    "notice-channel": "0"
+                }
+            em = discord.Embed(
+                title="오류 - 공지 채널 미설정",
+                description=f"{i.name} 서버의 공지 채널 설정이 되지 않음",
+                color=0xFF00 << 8,
+            )
+            await ctx.send(embed=em)
+
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def 공지설정(ctx, id: str = None):
+    if id is None:
+        id = ctx.channel.id
+    try:
+        sc[str(ctx.guild.id)]["notice-channel"] = id
+    except KeyError:
+        sc[str(ctx.guild.id)] = {
+            "notice-channel": id
+        }
+    finally:
+        em = discord.Embed(
+            title="성공 - 공지 채널 설정",
+            description="공지 채널이 설정되었습니다.",
+            color=0x00FF00,
+        )
+
 
 @bot.command()
 async def hellothisisverification(ctx):
@@ -121,7 +188,8 @@ async def 도움(ctx):
     !자판기 상품설명 번호
     !자판기 상품등록 이름 가격 설명
     !자판기 상품삭제 번호
-    !자판기 상품수정 번호 수정할속성 값
+    !자판기 상품수정 번호 속성 값
+    !자판기 공지설정 (채널ID)
     """
     ens = """
     (페이지)번째 페이지의 상품 목록을 봅니다.
@@ -164,11 +232,11 @@ async def 상품설명(ctx, n: int = 1):
         await ctx.send(embed=em)
     except KeyError:
         k = {
-                "index": "1",
-                "name": "등록된 상품 없음",
-                "price": "등록된 가격 없음",
-                "description": "등록된 설명 없음",
-            }
+            "index": "1",
+            "name": "등록된 상품 없음",
+            "price": "등록된 가격 없음",
+            "description": "등록된 설명 없음",
+        }
         em = discord.Embed(title=f"{1}번 상품의 설명", description="", color=0x00FF00)
         em.add_field(name=k["name"], value=k["description"], inline=True)
         em.set_footer(text=f"Vending Bot {version}")
@@ -210,11 +278,11 @@ async def 상품등록(ctx, name, price, *, description):
 @commands.has_permissions(administrator=True)
 async def 상품삭제(ctx, v: int):
     sjt = jpgtb[str(ctx.guild.id)]
-    var = sjt[int(v / 15)]
+    var = sjt[int((v % 15) - 1)]
     print(str((v - int(v / 15) * 15)))
     print(str(var))
     del var[(v - (int(v / 15) * 15)) - 1]
-    del jpgtb[str(ctx.guild.id)][int(v / 15)]
+    del jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)]
     em = discord.Embed(title=f"{v}번 물건이 삭제됨", description="삭제가 완료되었습니다.", color=0xFF00)
     em.set_footer(text=f"Vending Bot {version}")
     await ctx.send(embed=em)
@@ -226,23 +294,24 @@ async def 상품수정(ctx, v: int = 1, property: str = None, value: str = None)
         em = discord.Embed(title="오류", description="입력한 값 중 하나가 없거나 올바르지 않습니다!", color=0xFF0000)
         em.set_footer(text=f"Vending Bot {version}")
         return await ctx.send(embed=em)
-    
+
     properties = {
-        "이름" : "name",
-        "가격" : "price",
-        "설명" : "description"
+        "이름": "name",
+        "가격": "price",
+        "설명": "description"
     }
-    
+
     if property not in properties:
         em = discord.Embed(title="오류", description="수정할 속성이 올바르지 않습니다!", color=0xFF0000)
         em.add_field(name="가능한 속성", value="이름\n가격\n설명")
         em.set_footer(text=f"Vending Bot {version}")
         return await ctx.send(embed=em)
-    
+
     property = properties[property]
-        
-    jpgtb[str(ctx.guild.id)][int(v / 15)][property] = value
-    name, price = jpgtb[str(ctx.guild.id)][int(v / 15)]["name"], jpgtb[str(ctx.guild.id)][int(v / 15)]["price"]
+
+    jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)][property] = value
+    name, price = jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)]["name"], \
+                  jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)]["price"]
     em = discord.Embed(title=f"{name}(이)가 수정됨", description="", color=0x00FF00)
     em.add_field(name="물건 번호", value=str(v), inline=True)
     em.add_field(name="물건 이름", value=name, inline=True)
@@ -262,5 +331,6 @@ async def on_command_error(ctx, err):
         return
 
     raise err
+
 
 bot.run(token)
