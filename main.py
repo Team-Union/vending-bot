@@ -15,7 +15,7 @@ bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "v1.1.0"
+version = "1.1.1"
 try:
     from os import getenv
 
@@ -35,6 +35,8 @@ Hotfix (v1.0.1)
 Fixed: \"상품수정\" (v1.0.2)
 
 Added: \"공지\", \"공지설정\" (v1.1.0)
+
+Fixed: \"상품등록\" (v1.1.1)
 """
 
 
@@ -96,7 +98,8 @@ async def 공지(ctx, title, desc):
     )
     for i in bot.guilds:
         try:
-            await i.get_channel(int(sc[str(i.id)]["notice-channel"])).send(embed=em)
+            if int(sc[str(i.id)]["notice-channel"]) != 0:
+                await i.get_channel(int(sc[str(i.id)]["notice-channel"])).send(embed=em)
         except KeyError:
             try:
                 sc[str(i.id)]["notice-channel"] = "0"
@@ -104,12 +107,12 @@ async def 공지(ctx, title, desc):
                 sc[str(i.id)] = {
                     "notice-channel": "0"
                 }
-            em = discord.Embed(
+            em2 = discord.Embed(
                 title="오류 - 공지 채널 미설정",
                 description=f"{i.name} 서버의 공지 채널 설정이 되지 않음",
                 color=0xFF00 << 8,
             )
-            await ctx.send(embed=em)
+            await ctx.send(embed=em2)
 
 
 @bot.command()
@@ -266,7 +269,7 @@ async def 상품등록(ctx, name, price, *, description):
         sjt.append([])
         var = sjt[int(len(f) / 15)]
     var.append(goza)
-    jpgtb[str(ctx.guild.id)][int(len(f) / 15)] += goza
+    jpgtb[str(ctx.guild.id)][int(len(f) / 15)][len(f) % 15] += goza
     em = discord.Embed(title=f"{name}(이)가 생성됨", description="", color=0x00FF00)
     em.add_field(name="물건 번호", value=str(len(f) + 1), inline=True)
     em.add_field(name="물건 이름", value=name, inline=True)
