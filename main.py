@@ -1,9 +1,11 @@
 import json
+import os
 
 import discord
 from discord import HTTPException
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ext.commands import errors
+import hashlib
 
 with open("db.json", "r", encoding="utf-8") as f:
     jpgtb = json.load(f)
@@ -15,7 +17,7 @@ bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "1.1.1"
+version = "1.2.0"
 try:
     from os import getenv
 
@@ -23,7 +25,9 @@ try:
     if not token:
         raise RuntimeError('토큰 없음')
 except:
-    token = "token"
+    token = "Nzg3MTk1MDc5MzE1MjkyMTkx.X9RajA.BGXpC5T5uaptVTmo1jTeN8IvEII"
+
+h = hashlib.sha512()
 
 # changelog
 changelog = """
@@ -37,12 +41,44 @@ Fixed: \"상품수정\" (v1.0.2)
 Added: \"공지\", \"공지설정\" (v1.1.0)
 
 Fixed: \"상품등록\" (v1.1.1)
+
+Added: \"Auto-Updater\" (v1.2.0)
 """
+client = bot
+
+
+@tasks.loop(minutes=20)
+async def check_update():
+    os.system("rm -rf /home/shs3182ym_gmail_com/vending-bot-update-checker")
+    os.system("git clone https://github.com/TeamEnd/vending-bot.git "
+              "/home/shs3182ym_gmail_com/vending-bot-update-checker")
+    h.update(open("main.py", "rb").read())
+    t = h.hexdigest()
+    h.update(open("/home/shs3182ym_gmail_com/vending-bot-update-checker/main.py", "rb").read())
+    g = h.hexdigest()
+    if t != g:
+        em = discord.Embed(
+            title="업데이트",
+            description="업데이트가 자동으로 진행됩니다. 잠시 봇 작동이 중지됩니다.",
+            color=0x00FF00,
+        )
+        for i in bot.guilds:
+            try:
+                if int(sc[str(i.id)]["notice-channel"]) != 0:
+                    await i.get_channel(int(sc[str(i.id)]["notice-channel"])).send(embed=em)
+            except KeyError:
+                pass
+        print(1)
+        os.system("sudo cp /home/shs3182ym_gmail_com/vending-bot-update-checker/main.py "
+                  "/home/shs3182ym_gmail_com/japangibot/vending-bot/ -f")
+        os.system("python3 main.py")
+        exit(0)
 
 
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}({bot.user.id})\nVersion = {version}")
+    check_update.start()
 
 
 @bot.event
