@@ -307,7 +307,7 @@ async def 상품등록(ctx, name, price, *, description):
         sjt.append([])
         var = sjt[int(len(f) / 15)]
     var.append(goza)
-    jpgtb[str(ctx.guild.id)][int(len(f) / 15)][len(f) % 15] += goza
+    jpgtb[str(ctx.guild.id)][int(len(f) / 15)] += goza
     em = discord.Embed(title=f"{name}(이)가 생성됨", description="", color=0x00FF00)
     em.add_field(name="물건 번호", value=str(len(f) + 1), inline=True)
     em.add_field(name="물건 이름", value=name, inline=True)
