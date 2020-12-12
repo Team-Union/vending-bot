@@ -54,8 +54,10 @@ async def check_update():
               "/home/shs3182ym_gmail_com/vending-bot-update-checker")
     h.update(open("main.py", "rb").read())
     t = h.hexdigest()
+    print(t)
     h.update(open("/home/shs3182ym_gmail_com/vending-bot-update-checker/main.py", "rb").read())
     g = h.hexdigest()
+    print(g)
     if t != g:
         em = discord.Embed(
             title="업데이트",
