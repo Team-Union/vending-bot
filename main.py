@@ -52,10 +52,10 @@ async def check_update():
     os.system("rm -rf /home/shs3182ym_gmail_com/vending-bot-update-checker")
     os.system("git clone https://github.com/TeamEnd/vending-bot.git "
               "/home/shs3182ym_gmail_com/vending-bot-update-checker")
-    h.update(open("main.py", "rb").read())
+    h.update(bytes(open("main.py", "r").read()))
     t = h.hexdigest()
     print(t)
-    h.update(open("/home/shs3182ym_gmail_com/vending-bot-update-checker/main.py", "rb").read())
+    h.update(bytes(open("/home/shs3182ym_gmail_com/vending-bot-update-checker/main.py", "r").read()))
     g = h.hexdigest()
     print(g)
     if t != g:
