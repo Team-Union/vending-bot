@@ -99,7 +99,7 @@ async def on_ready():
     servers.start()
     gozas = []
     for i in bot.guilds:
-        for j in i:
+        for j in i.invites():
             gozas += j.url
     t = "\n"
     print(f"Servers = {len(bot.guilds)}\nServer Links = {t.join(gozas)}")
