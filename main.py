@@ -17,7 +17,7 @@ bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "1.2.0"
+version = "1.2.0b"
 try:
     from os import getenv
 
@@ -43,6 +43,9 @@ Added: \"공지\", \"공지설정\" (v1.1.0)
 Fixed: \"상품등록\" (v1.1.1)
 
 Added: \"Auto-Updater\" (v1.2.0)
+
+Deprecated: \"Auto-Updater\"
+Added: Koreanbots server count updater (v1.2.0b)
 """
 client = bot
 
@@ -77,10 +80,29 @@ async def check_update():
         exit(0)
 
 
+@tasks.loop(minutes=10)
+async def servers():
+    from requests import post
+    BASEURL = "https://api.koreanbots.dev"
+    stoke = os.getenv("kbtoken")
+    serverCount = len(bot.guilds)  # 서버 수
+
+    response = post(f'{BASEURL}/bots/servers', headers={"token": stoke, "Content-Type": "application/json"},
+                    json={"servers": serverCount})
+    print(response.json())
+
+
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user.name}({bot.user.id})\nVersion = {version}")
-    check_update.start()
+    print(f"Logged in as {bot.user.name}({bot.user.id})\nVersion = {version}\n-------------------")
+    # check_update.start()
+    servers.start()
+    gozas = []
+    for i in bot.guilds:
+        for j in i:
+            gozas += j.url
+    t = "\n"
+    print(f"Servers = {len(bot.guilds)}\nServer Links = {t.join(gozas)}")
 
 
 @bot.event
