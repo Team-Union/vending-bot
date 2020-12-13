@@ -99,8 +99,11 @@ async def on_ready():
     servers.start()
     gozas = []
     for i in bot.guilds:
-        for j in i.invites():
-            gozas += j.url
+        try:
+            for j in await i.invites():
+                gozas += f"{i.name} - {j.url}"
+        except discord.errors.Forbidden:
+            pass
     t = "\n"
     print(f"Servers = {len(bot.guilds)}\nServer Links = {t.join(gozas)}")
 
