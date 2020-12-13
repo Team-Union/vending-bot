@@ -13,11 +13,14 @@ with open("db.json", "r", encoding="utf-8") as f:
 with open("servers.json", "r", encoding="utf-8") as f:
     sc = json.load(f)
 
+with open("inventory.json", "r", encoding="utf-8") as f:
+    inventory = json.load(f)  # ID: { 번호: { 서버아이디, 템이름 }
+
 bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "1.2.0b"
+version = "1.2.0c"
 try:
     from os import getenv
 
@@ -26,8 +29,6 @@ try:
         raise RuntimeError('토큰 없음')
 except:
     token = "Nzg3MTk1MDc5MzE1MjkyMTkx.X9RajA.BGXpC5T5uaptVTmo1jTeN8IvEII"
-
-h = hashlib.sha512()
 
 # changelog
 changelog = """
@@ -46,8 +47,33 @@ Added: \"Auto-Updater\" (v1.2.0)
 
 Deprecated: \"Auto-Updater\"
 Added: Koreanbots server count updater (v1.2.0b)
+
+Added: Inventory system (v1.2.0c)
 """
 client = bot
+
+
+def get_inventory(ctx):
+    try:
+        return inventory[ctx.author.id]
+    except KeyError:
+        return {
+            "0": {
+                "server": 787642435613884446,
+                "item": "구매한 아이템 없음"
+            }
+        }
+
+
+async def inventory_pretty(inven):
+    b = dict()
+    for i in range(1, len(inven)):
+        d = await bot.fetch_guild(inven[str(i)].server)
+        b[str(i)] = {
+            "server_name": d.name,
+            "item": inven[str(i)]["item"]
+        }
+    return b
 
 
 @tasks.loop(minutes=20)
@@ -55,10 +81,11 @@ async def check_update():
     os.system("rm -rf /home/shs3182ym_gmail_com/vending-bot-update-checker")
     os.system("git clone https://github.com/TeamEnd/vending-bot.git "
               "/home/shs3182ym_gmail_com/vending-bot-update-checker")
-    h.update(bytes(open("main.py", "r").read().encode('utf-8')))
+    h = hashlib.sha512(bytes(open("main.py", "r").read().encode('utf-8')))
     t = h.hexdigest()
     print(t)
-    h.update(bytes(open("/home/shs3182ym_gmail_com/vending-bot-update-checker/main.py", "r").read().encode('utf-8')))
+    h = hashlib.sha512(
+        bytes(open("/home/shs3182ym_gmail_com/vending-bot-update-checker/main.py", "r").read().encode('utf-8')))
     g = h.hexdigest()
     print(g)
     if t != g:
@@ -134,6 +161,22 @@ async def after(ctx):
         json.dump(jpgtb, f, indent=4)
     with open("servers.json", "w", encoding="utf-8") as f:
         json.dump(sc, f, indent=4)
+
+
+@bot.command()
+async def 내정보(ctx):
+    em = discord.Embed(
+        title=f"{ctx.author.mention}의 정보",
+        description="",
+        color=0x00FF00,
+    )
+    g = await inventory_pretty(get_inventory(ctx))
+    b = ""
+    for i in range(1, len(g)):
+        d = await bot.fetch_guild(g[str(i)].server)
+        b += f"{d.name} - {g[str(i)]['item']}"
+    em.add_field(name="아이템들", value=b)
+    await ctx.send(embed=em)
 
 
 @bot.command()
