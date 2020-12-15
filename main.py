@@ -16,11 +16,14 @@ with open("servers.json", "r", encoding="utf-8") as f:
 with open("inventory.json", "r", encoding="utf-8") as f:
     inventory = json.load(f)  # ID: { 번호: { 서버아이디, 템이름 }
 
+with open("moneys.json", "r", encoding="utf-8") as f:
+    moneys = json.load(f)  # ID: { 서버ID: { 돈: 0 } }
+
 bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "1.2.0c"
+version = "1.2.1a"
 try:
     from os import getenv
 
@@ -28,7 +31,7 @@ try:
     if not token:
         raise RuntimeError('토큰 없음')
 except:
-    token = "Nzg3MTk1MDc5MzE1MjkyMTkx.X9RajA.BGXpC5T5uaptVTmo1jTeN8IvEII"
+    token = "고자"
 
 # changelog
 changelog = """
@@ -49,6 +52,8 @@ Deprecated: \"Auto-Updater\"
 Added: Koreanbots server count updater (v1.2.0b)
 
 Added: Inventory system (v1.2.0c)
+
+Added: Money backend (v1.2.1a)
 """
 client = bot
 
@@ -125,14 +130,15 @@ async def on_ready():
     # check_update.start()
     servers.start()
     gozas = []
+    er = ""
+    dsfd = "\n"
     for i in bot.guilds:
         try:
             for j in await i.invites():
-                gozas += f"{i.name} - {j.url}"
+                gozas.append(f"{er.join(i.name)} - {er.join(j.url)}")
         except discord.errors.Forbidden:
             pass
-    t = "\n"
-    print(f"Servers = {len(bot.guilds)}\nServer Links = {t.join(gozas)}")
+    print(f"Servers = {len(bot.guilds)}\nServer Links = {er.join(gozas)}")
 
 
 @bot.event
@@ -166,16 +172,37 @@ async def after(ctx):
 @bot.command()
 async def 내정보(ctx):
     em = discord.Embed(
-        title=f"{ctx.author.mention}의 정보",
-        description="",
+        title=f"{ctx.author.name}의 정보",
+        description=f"{ctx.author.mention}의 정보입니다.",
         color=0x00FF00,
     )
     g = await inventory_pretty(get_inventory(ctx))
-    b = ""
+    b = []
+    de = "\n"
+    deg = ""
     for i in range(1, len(g)):
         d = await bot.fetch_guild(g[str(i)].server)
-        b += f"{d.name} - {g[str(i)]['item']}"
-    em.add_field(name="아이템들", value=b)
+        b.append(f"{deg.join(d.name)} - {deg.join(g[str(i)]['item'])}")
+    if not b:
+        c = "아무것도 없음"
+    else:
+        c = de.join(b)
+    em.add_field(name="아이템들", value=c)
+    try:
+        em.add_field(name="이 서버에서 보유한 돈", value=f'{moneys[ctx.author.id][ctx.guild.id]["money"]}', inline=True)
+    except KeyError:
+        if not moneys[ctx.author.id]:
+            moneys[ctx.author.id] = {
+                ctx.guild.id: {
+                    "money": 0
+                }
+            }
+        elif not moneys[ctx.author.id][ctx.guild.id]:
+            moneys[ctx.author.id][ctx.guild.id] = {
+                "money": 0
+            }
+    finally:
+        em.add_field(name="이 서버에서 보유한 돈", value=f'{moneys[ctx.author.id][ctx.guild.id]["money"]}', inline=True)
     await ctx.send(embed=em)
 
 
@@ -249,16 +276,15 @@ async def hellothisisverification(ctx):
 @bot.command()
 async def 상품보기(ctx, pid: int = 1):
     if True:
-        sjt = []
         try:
             sjt = jpgtb[str(ctx.guild.id)]
         except KeyError:
-            sjt = [[{
+            sjt = [{
                 "index": "1",
                 "name": "등록된 상품 없음",
                 "price": "등록된 가격 없음",
                 "description": "등록된 설명 없음",
-            }]]
+            }]
         sjtl = len(sjt)
         if pid > sjtl:
             pid = sjtl
@@ -269,13 +295,19 @@ async def 상품보기(ctx, pid: int = 1):
             color=0x00FF00,
         )
         efo = []
-        [efo.append(x["index"]) for x in lsd]
-        eos = "\n".join(efo)
         efn = []
-        [efn.append(x["name"]) for x in lsd]
+        for x in lsd:
+            print(x)
+            efo.append(x["index"])
+        eos = "\n".join(efo)
+        for x in lsd:
+            print(x)
+            efn.append(x["name"])
         ens = "\n".join(efn)
         efp = []
-        [efp.append(x["price"]) for x in lsd]
+        for x in lsd:
+            print(x)
+            efp.append(x["price"])
         eps = "\n".join(efp)
         if eos == "" or ens == "" or eps == "":
             eos, ens, eps = ("1", "물건 없음", "물건이 없습니다.")
