@@ -23,7 +23,7 @@ bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "1.2.1a"
+version = "1.3.0a"
 try:
     from os import getenv
 
@@ -54,6 +54,8 @@ Added: Koreanbots server count updater (v1.2.0b)
 Added: Inventory system (v1.2.0c)
 
 Added: Money backend (v1.2.1a)
+
+Added: Money frontend (v1.3.0a)
 """
 client = bot
 
@@ -159,6 +161,10 @@ async def on_command(ctx):
             "price": "등록된 가격 없음",
             "description": "등록된 설명 없음",
         }]]
+    for v in range(1, len(jpgtb[str(ctx.guild.id)]) * 15):
+        if v < len(jpgtb[str(ctx.guild.id)][int(v / 15)]):
+            if "stock" not in jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)]:
+                jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)]["stock"] = -1
 
 
 @bot.after_invoke
@@ -167,6 +173,10 @@ async def after(ctx):
         json.dump(jpgtb, f, indent=4)
     with open("servers.json", "w", encoding="utf-8") as f:
         json.dump(sc, f, indent=4)
+    with open("inventory.json", "w", encoding="utf-8") as f:
+        json.dump(inventory, f, indent=4)
+    with open("moneys.json", "w", encoding="utf-8") as f:
+        json.dump(moneys, f, indent=4)
 
 
 @bot.command()
@@ -191,13 +201,13 @@ async def 내정보(ctx):
     try:
         em.add_field(name="이 서버에서 보유한 돈", value=f'{moneys[ctx.author.id][ctx.guild.id]["money"]}', inline=True)
     except KeyError:
-        if not moneys[ctx.author.id]:
+        if ctx.author.id not in moneys.keys():
             moneys[ctx.author.id] = {
                 ctx.guild.id: {
                     "money": 0
                 }
             }
-        elif not moneys[ctx.author.id][ctx.guild.id]:
+        elif ctx.guild.id not in moneys[ctx.author.id].keys():
             moneys[ctx.author.id][ctx.guild.id] = {
                 "money": 0
             }
@@ -309,11 +319,20 @@ async def 상품보기(ctx, pid: int = 1):
             print(x)
             efp.append(x["price"])
         eps = "\n".join(efp)
+        stockstmp = []
+        for x in lsd:
+            print(x)
+            if "stock" not in x.keys():
+                stockstmp.append(0)
+            else:
+                stockstmp.append(x["stock"])
+        stockstr = "\n".join(stockstmp)
         if eos == "" or ens == "" or eps == "":
             eos, ens, eps = ("1", "물건 없음", "물건이 없습니다.")
         em.add_field(name="물건 번호", value=eos, inline=True)
         em.add_field(name="물건 이름", value=ens, inline=True)
         em.add_field(name="물건 가격", value=eps, inline=True)
+        em.add_field(name="물건 재고", value=stockstr, inline=True)
         em.set_footer(text=f"Vending Bot {version}")
         await ctx.send(embed=em)
 
@@ -332,6 +351,7 @@ async def 도움(ctx):
     !자판기 상품삭제 번호
     !자판기 상품수정 번호 속성 값
     !자판기 공지설정 (채널ID)
+    !자판기 돈 부명령 ID 값
     """
     ens = """
     (페이지)번째 페이지의 상품 목록을 봅니다.
@@ -339,6 +359,8 @@ async def 도움(ctx):
     이름, 가격, 설명을 가진 상품을 등록합니다.
     번호에 해당하는 상품을 삭제합니다.
     번호에 해당하는 상품을 수정합니다.
+    (채널ID) 채널을 공지 채널로 설정합니다.
+    자세한 도움말은 '!자판기 돈'을 쳐보세요.
     """
     em.add_field(name="명령어", value=eos, inline=True)
     em.add_field(name="설명", value=ens, inline=True)
@@ -364,8 +386,9 @@ async def 상품설명(ctx, n: int = 1):
             f = [{
                 "index": str(len(f) + 1),
                 "name": "등록된 상품 없음",
-                "price": "등록된 가격 없음",
+                "price": "0",
                 "description": "등록된 설명 없음",
+                "stock": 0
             }]
         k = f[n - 1]
         em = discord.Embed(title=f"{n}번 상품의 설명", description="", color=0x00FF00)
@@ -376,8 +399,9 @@ async def 상품설명(ctx, n: int = 1):
         k = {
             "index": "1",
             "name": "등록된 상품 없음",
-            "price": "등록된 가격 없음",
+            "price": "0",
             "description": "등록된 설명 없음",
+            "stock": 0
         }
         em = discord.Embed(title=f"{1}번 상품의 설명", description="", color=0x00FF00)
         em.add_field(name=k["name"], value=k["description"], inline=True)
@@ -387,7 +411,7 @@ async def 상품설명(ctx, n: int = 1):
 
 @bot.command()
 @commands.has_permissions(administrator=True)
-async def 상품등록(ctx, name, price, *, description):
+async def 상품등록(ctx, name, price, stock, *, description):
     sjt = jpgtb[str(ctx.guild.id)]
     f = []
     for i in sjt:
@@ -398,6 +422,7 @@ async def 상품등록(ctx, name, price, *, description):
         "name": name,
         "price": price,
         "description": description,
+        "stock": stock
     }
     print(str(int(len(f) / 15)))
     var = []
@@ -412,6 +437,7 @@ async def 상품등록(ctx, name, price, *, description):
     em.add_field(name="물건 번호", value=str(len(f) + 1), inline=True)
     em.add_field(name="물건 이름", value=name, inline=True)
     em.add_field(name="물건 가격", value=price, inline=True)
+    em.add_field(name="물건 재고", value=stock, inline=True)
     em.set_footer(text=f"Vending Bot {version}")
     await ctx.send(embed=em)
 
@@ -431,6 +457,7 @@ async def 상품삭제(ctx, v: int):
 
 
 @bot.command()
+@commands.has_permissions(administrator=True)
 async def 상품수정(ctx, v: int = 1, property: str = None, value: str = None):
     if property is None or value is None:
         em = discord.Embed(title="오류", description="입력한 값 중 하나가 없거나 올바르지 않습니다!", color=0xFF0000)
@@ -440,32 +467,99 @@ async def 상품수정(ctx, v: int = 1, property: str = None, value: str = None)
     properties = {
         "이름": "name",
         "가격": "price",
-        "설명": "description"
+        "설명": "description",
+        "재고": "stock"
     }
 
     if property not in properties:
         em = discord.Embed(title="오류", description="수정할 속성이 올바르지 않습니다!", color=0xFF0000)
-        em.add_field(name="가능한 속성", value="이름\n가격\n설명")
+        em.add_field(name="가능한 속성", value="이름\n가격\n설명\n재고")
         em.set_footer(text=f"Vending Bot {version}")
         return await ctx.send(embed=em)
+
+    if "stock" not in jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)].keys():
+        jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)]["stock"] = -1
 
     property = properties[property]
 
     jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)][property] = value
     name, price = jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)]["name"], \
                   jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)]["price"]
+    stock = jpgtb[str(ctx.guild.id)][int(v / 15)][int((v % 15) - 1)]["stock"]
     em = discord.Embed(title=f"{name}(이)가 수정됨", description="", color=0x00FF00)
     em.add_field(name="물건 번호", value=str(v), inline=True)
     em.add_field(name="물건 이름", value=name, inline=True)
     em.add_field(name="물건 가격", value=price, inline=True)
+    em.add_field(name="물건 재고", value=stock, inline=True)
     em.set_footer(text=f"Vending Bot {version}")
     await ctx.send(embed=em)
+
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def 돈(ctx, subcmd: str = "이미친놈이명령어입력안함", id: int = 784572821510160404, param: int = -1):
+    if subcmd == "이미친놈이명령어입력안함":
+        em = discord.Embed(title="도움말", description="돈 관련 명령어들입니다.", color=0xFF00)
+        em.add_field(name="명령어들", value=f"""
+        설정 - <@{id}>의 돈을 {param}으로 설정합니다.
+        가산 - <@{id}>의 돈을 {param}만큼 가산합니다.
+        감산 - <@{id}>의 돈을 {param}만큼 감산합니다.
+        """)
+        em.set_footer(text=f"Vending Bot {version}")
+        await ctx.send(embed=em)
+    elif id < 0 or param == 784572821510160404:
+        if param == 784572821510160404:
+            em = discord.Embed(title="오류", description="두 번째 인자가 입력되지 않았습니다!", color=0xFF0000)
+            em.set_footer(text=f"Vending Bot {version}")
+            await ctx.send(embed=em)
+        if id < 1:
+            em = discord.Embed(title="오류", description="첫 번째 인자가 입력되지 않았습니다!", color=0xFF0000)
+            em.set_footer(text=f"Vending Bot {version}")
+            await ctx.send(embed=em)
+    else:
+        if subcmd == "설정":
+            if id in moneys.keys():
+                moneys[id][ctx.guild.id] = param
+            else:
+                moneys[id] = {
+                    ctx.guild.id: param
+                }
+        elif subcmd == "가산":
+            if id in moneys.keys():
+                moneys[id][ctx.guild.id] = moneys[id][ctx.guild.id] + param
+            else:
+                moneys[id] = {
+                    ctx.guild.id: param
+                }
+        elif subcmd == "감산":
+            if id in moneys.keys():
+                if (moneys[id][ctx.guild.id] - param) > 0:
+                    moneys[id][ctx.guild.id] = moneys[id][ctx.guild.id] - param
+                else:
+                    em = discord.Embed(title="오류", description=f"<@{id}>의 돈이 {param}보다 적습니다!", color=0xFF0000)
+                    em.set_footer(text=f"Vending Bot {version}")
+                    await ctx.send(embed=em)
+            else:
+                moneys[id] = {
+                    ctx.guild.id: param
+                }
+        if subcmd in ("설정", "가산", "감산"):
+            if subcmd == "설정":
+                pr = "으로 설정"
+            else:
+                pr = f"만큼 {subcmd}"
+            em = discord.Embed(title=f"성공", description=f"<@{id}>의 돈이 {param}{pr}되었습니다.", color=0x00FF00)
+            em.set_footer(text=f"Vending Bot {version}")
+        else:
+            em = discord.Embed(title="오류", description="부가 명령어가 존재하지 않습니다!", color=0xFF0000)
+            em.set_footer(text=f"Vending Bot {version}")
+            await ctx.send(embed=em)
 
 
 @bot.event
 async def on_command_error(ctx, err):
     if isinstance(err, commands.errors.MissingPermissions):
-        em = discord.Embed(title="오류 : ", description="당신은 이 커맨드를 사용할 권한이 없습니다!", color=0xFF0000)
+        em = discord.Embed(title="오류", description="당신은 이 커맨드를 사용할 권한이 없습니다!", color=0xFF0000)
         em.set_footer(text=f"Vending Bot {version}")
         return await ctx.send(embed=em)
 
