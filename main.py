@@ -23,7 +23,7 @@ bot = commands.Bot(command_prefix="!자판기 ")
 bot.remove_command('help')
 
 # configuration
-version = "1.3.0a"
+version = "1.4.0a"
 try:
     from os import getenv
 
@@ -56,6 +56,8 @@ Added: Inventory system (v1.2.0c)
 Added: Money backend (v1.2.1a)
 
 Added: Money frontend (v1.3.0a)
+
+Added: \"구매\" (v1.4.0a)
 """
 client = bot
 
@@ -152,14 +154,14 @@ async def on_command(ctx):
             "index": "1",
             "name": "등록된 상품 없음",
             "price": "등록된 가격 없음",
-            "description": "등록된 설명 없음",
+            "description": "등록된 설명 없음"
         }]]
     except HTTPException as e:
         jpgtb[str(ctx.guild.id)] = [[{
             "index": "1",
             "name": "등록된 상품 없음",
             "price": "등록된 가격 없음",
-            "description": "등록된 설명 없음",
+            "description": "등록된 설명 없음"
         }]]
     for v in range(1, len(jpgtb[str(ctx.guild.id)]) * 15):
         if v < len(jpgtb[str(ctx.guild.id)][int(v / 15)]):
@@ -352,6 +354,7 @@ async def 도움(ctx):
     !자판기 상품수정 번호 속성 값
     !자판기 공지설정 (채널ID)
     !자판기 돈 부명령 ID 값
+    !자판기 구매 번호
     """
     ens = """
     (페이지)번째 페이지의 상품 목록을 봅니다.
@@ -361,6 +364,7 @@ async def 도움(ctx):
     번호에 해당하는 상품을 수정합니다.
     (채널ID) 채널을 공지 채널로 설정합니다.
     자세한 도움말은 '!자판기 돈'을 쳐보세요.
+    번호에 해당하는 상품을 구매합니다.
     """
     em.add_field(name="명령어", value=eos, inline=True)
     em.add_field(name="설명", value=ens, inline=True)
@@ -498,6 +502,7 @@ async def 상품수정(ctx, v: int = 1, property: str = None, value: str = None)
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def 돈(ctx, subcmd: str = "이미친놈이명령어입력안함", id: int = 784572821510160404, param: int = -1):
+    em = discord.Embed()
     if subcmd == "이미친놈이명령어입력안함":
         em = discord.Embed(title="도움말", description="돈 관련 명령어들입니다.", color=0xFF00)
         em.add_field(name="명령어들", value=f"""
@@ -553,7 +558,37 @@ async def 돈(ctx, subcmd: str = "이미친놈이명령어입력안함", id: int
         else:
             em = discord.Embed(title="오류", description="부가 명령어가 존재하지 않습니다!", color=0xFF0000)
             em.set_footer(text=f"Vending Bot {version}")
+    await ctx.send(embed=em)
+
+
+@bot.command()
+async def 구매(ctx, index):
+    if str(ctx.guild.id) in jpgtb.keys():
+        if jpgtb[str(ctx.guild.id)][int(index / 15)][index % 15]["price"].isdecimal():
+            t = jpgtb[str(ctx.guild.id)][int(index / 15)][index % 15]["stock"]
+            if t == -1 or t > 0:
+                if moneys[ctx.ctx.author.id][ctx.guild.id] >= jpgtb[str(ctx.guild.id)][int(index / 15)][index % 15]["price"]:
+                    jpgtb[str(ctx.guild.id)][int(index / 15)][index % 15]["stock"] -= 1
+                    moneys[ctx.ctx.author.id][ctx.guild.id] -= jpgtb[str(ctx.guild.id)][int(index / 15)][index % 15]["price"]
+                    em = discord.Embed(title=f"성공", description=f'{jpgtb[str(ctx.guild.id)][int(index / 15)][index % 15]["name"]} 아이템이 구매되었습니다.', color=0x00FF00)
+                    em.set_footer(text=f"Vending Bot {version}")
+                    await ctx.send(embed=em)
+                else:
+                    em = discord.Embed(title="오류", description=f'돈이 모자랍니다! (돈={moneys[ctx.ctx.author.id][ctx.guild.id]}, 가격={jpgtb[str(ctx.guild.id)][int(index / 15)][index % 15]["price"]})', color=0xFF0000)
+                    em.set_footer(text=f"Vending Bot {version}")
+                    await ctx.send(embed=em)
+            else:
+                em = discord.Embed(title="오류", description="구매 불가능한 아이템입니다!", color=0xFF0000)
+                em.set_footer(text=f"Vending Bot {version}")
+                await ctx.send(embed=em)
+        else:
+            em = discord.Embed(title="오류", description="구매 불가능한 아이템입니다!", color=0xFF0000)
+            em.set_footer(text=f"Vending Bot {version}")
             await ctx.send(embed=em)
+    else:
+        em = discord.Embed(title="오류", description="현재 서버에 등록된 아이템이 없습니다!", color=0xFF0000)
+        em.set_footer(text=f"Vending Bot {version}")
+        await ctx.send(embed=em)
 
 
 @bot.event
